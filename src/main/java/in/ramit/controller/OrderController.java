@@ -1,28 +1,20 @@
 package in.ramit.controller;
 
-import java.util.Map;
-
+import in.ramit.entity.ProductOrder;
+import in.ramit.service.RazorpayService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
-import in.ramit.entity.ProductOrder;
-import in.ramit.service.RazorpayService;
+import java.util.Map;
 
 @Controller
 public class OrderController {
 
-	private RazorpayService razorpayService;
-	
-	
+	private final RazorpayService razorpayService;
 	public OrderController(RazorpayService razorpayService) {
-		super();
 		this.razorpayService = razorpayService;
 	}
 
@@ -46,5 +38,12 @@ public class OrderController {
 		model.addAttribute("order", updatedOrder);
 		return "response";
 	}
-	
+
+	@PostMapping("/razorpayment-callback")
+	public String handleRazorPaymentCallback(@RequestParam Map<String, String> respPayload, Model model) {
+		System.out.println(respPayload);
+		ProductOrder updatedOrder = razorpayService.verifyPaymentAndUpdateOrderStatus(respPayload);
+		model.addAttribute("order", updatedOrder);
+		return "response";
+	}
 }

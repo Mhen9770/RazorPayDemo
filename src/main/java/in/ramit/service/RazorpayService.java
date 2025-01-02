@@ -2,6 +2,7 @@ package in.ramit.service;
 
 import java.util.Map;
 
+import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -14,47 +15,35 @@ import in.ramit.entity.ProductOrder;
 import in.ramit.repo.OrderRepository;
 
 @Service
+@RequiredArgsConstructor
 public class RazorpayService {
-
-	private OrderRepository orderRepository;
-
-	@Value("${razorpay.key.id}")
-	private String keyId;
-
 	@Value("${razorpay.key.secret}")
 	private String keySecret;
-
-	private RazorpayClient razorpayClient;
-
-	public RazorpayService(OrderRepository orderRepository) {
-		this.orderRepository = orderRepository;
-	}
+	private final OrderRepository orderRepository;
+	private final RazorpayClient razorpayClient;
 
 	public ProductOrder createOrder(ProductOrder productOrder) throws Exception {
-		JSONObject orderRequset = new JSONObject();
-		orderRequset.put("amount", productOrder.getAmount() * 100);
-		orderRequset.put("currency", "INR");
-		System.out.println(keyId);
-		System.out.println(keySecret);
-
-		this.razorpayClient = new RazorpayClient(keyId, keySecret);
-		Order razorpayOrder = razorpayClient.orders.create(orderRequset);
+		JSONObject orderRequest = new JSONObject();
+		orderRequest.put("amount", productOrder.getAmount() * 100);
+		orderRequest.put("currency", "INR");
+		Order razorpayOrder = razorpayClient.orders.create(orderRequest);
 
 		productOrder.setRazorpayOrderId(razorpayOrder.get("id"));
 		productOrder.setStatus(razorpayOrder.get("status"));
-		System.out.println(productOrder);
+
 		orderRepository.save(productOrder);
 		return productOrder;
 
 	}
 
+
 	public ProductOrder verifyPaymentAndUpdateOrderStatus(Map<String, String> respPayload) {
 		ProductOrder studentOrder = null;
 		try {
-
 			String razorpayOrderId = respPayload.get("razorpay_order_id");
 			String razorpayPaymentId = respPayload.get("razorpay_payment_id");
 			String razorpaySignature = respPayload.get("razorpay_signature");
+
 
 			// Verify the signature to ensure the payload is genuine
 			boolean isValidSignature = verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature);
